@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Code Review Report</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+<div class="container">
+
+    <a class="back-btn" href="/">← Back</a>
+
+    <h1 class="title">Review #{{ item.id }}</h1>
+
+    <div class="meta">
+        <div><strong>Project:</strong> {{ item.project_id }}</div>
+        <div><strong>MR IID:</strong> #{{ item.mr_iid }}</div>
+        <div><strong>Date:</strong> {{ item.timestamp }}</div>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="card">
+        <h2>Summary</h2>
+        <p>{{ item.summary }}</p>
+    </div>
+
+    <!-- FUNCTIONAL CORRECTNESS -->
+    <div class="card">
+        <h2>Functional correctness</h2>
+        <p>{{ item.functional_correctness }}</p>
+    </div>
+
+    <!-- FINDINGS -->
+    <div class="card">
+        <h2>Findings</h2>
+
+        {% if item.findings|length == 0 %}
+            <div class="no-issues">No critical issues found.</div>
+        {% else %}
+
+            {% for f in item.findings %}
+            <div class="finding">
+
+                <div class="finding-header">
+                    <!-- BADGE -->
+                    {% if f.severity == 'critical' %}
+                        <span class="badge badge-critical">CRITICAL</span>
+                    {% elif f.severity == 'high' %}
+                        <span class="badge badge-high">HIGH</span>
+                    {% elif f.severity == 'medium' %}
+                        <span class="badge badge-medium">MEDIUM</span>
+                    {% else %}
+                        <span class="badge badge-low">LOW</span>
+                    {% endif %}
+
+                    <span class="finding-type">{{ f.type|upper }}</span>
+                </div>
+
+                <div class="finding-body">
+                    <p><strong>File:</strong> {{ f.file }}</p>
+                    <p><strong>Line:</strong> {{ f.line }}</p>
+                    <p><strong>Issue:</strong> {{ f.message }}</p>
+                    <p><strong>Recommendation:</strong> {{ f.recommendation }}</p>
+                </div>
+
+            </div>
+            {% endfor %}
+
+        {% endif %}
+    </div>
+
+    <!-- VERDICT -->
+    <div class="card">
+        <h2>Verdict</h2>
+
+        {% if item.verdict == 'ready-for-merge' %}
+            <span class="badge badge-green verdict-big">READY FOR MERGE</span>
+
+        {% elif item.verdict == 'needs-fixes' %}
+            <span class="badge badge-red verdict-big">NEEDS FIXES</span>
+
+        {% else %}
+            <span class="badge badge-gray verdict-big">UNKNOWN</span>
+        {% endif %}
+    </div>
+
+    <!-- LABELS -->
+    <div class="card">
+        <h2>Labels</h2>
+        {% if item.labels|length == 0 %}
+            <span class="badge badge-gray">No labels</span>
+        {% else %}
+            {% for label in item.labels %}
+                <span class="badge badge-gray">{{ label }}</span>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Code Review Assistant – Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+<div class="container">
+
+    <h1 class="title">AI Code Review Dashboard</h1>
+
+    {% if reviews|length == 0 %}
+        <p>No reviews yet.</p>
+    {% else %}
+
+    <table class="table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Project</th>
+            <th>MR IID</th>
+            <th>Verdict</th>
+            <th>Timestamp</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        {% for r in reviews %}
+        <tr class="table-row" onclick="window.location='/review/{{ r.id }}'">
+            <td>{{ r.id }}</td>
+            <td>{{ r.project_id }}</td>
+            <td>#{{ r.mr_iid }}</td>
+            <td>
+                {% if r.verdict == 'ready-for-merge' %}
+                    <span class="badge badge-green">READY</span>
+                {% elif r.verdict == 'needs-fixes' %}
+                    <span class="badge badge-red">FIXES</span>
+                {% else %}
+                    <span class="badge badge-gray">UNKNOWN</span>
+                {% endif %}
+            </td>
+            <td>{{ r.timestamp }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% endif %}
+
+</div>
+</body>
+</html>
