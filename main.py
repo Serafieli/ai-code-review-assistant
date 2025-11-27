@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, Header, HTTPException
 from fastapi.responses import JSONResponse
 
+# импорт секрета из конфига
 from config import WEBHOOK_SECRET
 
 app = FastAPI(title="AI Code Review Assistant")
@@ -8,6 +9,9 @@ app = FastAPI(title="AI Code Review Assistant")
 
 @app.get("/ping")
 async def ping():
+    """
+    Проверка, что сервис жив
+    """
     return {"status": "ok", "service": "ai-code-review-assistant"}
 
 
@@ -17,6 +21,10 @@ async def gitlab_webhook(
     x_gitlab_token: str | None = Header(None, alias="X-Gitlab-Token"),
     x_gitlab_event: str | None = Header(None, alias="X-Gitlab-Event")
 ):
+    """
+    Приём GitLab вебхука
+    """
+    # Проверяем секрет
     if x_gitlab_token != WEBHOOK_SECRET:
         raise HTTPException(status_code=401, detail="Invalid webhook token")
 
