@@ -1,130 +1,190 @@
-# 🤖 AI Code Review Assistant – Автоматический AI-ревьюер для GitLab
+# AI Code Review Assistant
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white">
-  <img src="https://img.shields.io/badge/FastAPI-0.110+-009688?style=for-the-badge&logo=fastapi&logoColor=white">
-  <img src="https://img.shields.io/badge/OpenAI_API-Enabled-412991?style=for-the-badge&logo=openai">
-  <img src="https://img.shields.io/badge/GitLab-Hooks_Friendly-FC6D26?style=for-the-badge&logo=gitlab">
-  <br>
-  <img src="https://img.shields.io/badge/Status-Production_ready-brightgreen?style=for-the-badge">
-</p>
+Автоматическая проверка Merge Request в GitLab с помощью OpenAI. Сервис получает изменения через webhook, анализирует diff и публикует результаты прямо в обсуждении MR. Отчёты также доступны в простой веб-панели.
 
-<p align="center">
-  <strong>AI-ассистент, который автоматически проверяет код в GitLab, анализирует diff, ищет ошибки и оставляет профессиональные комментарии.</strong><br>
-  Полная автоматизация рутинных code review задач → экономия времени → повышение качества кода.
-</p>
+**Стек:** Python · FastAPI · GitLab REST API · OpenAI API · Jinja2
 
----
+## Возможности
 
-## ✨ Основные возможности
+- **Проверка по событию MR.** Анализ запускается при открытии (`open`) или повторном открытии (`reopen`) Merge Request. Остальные события игнорируются, чтобы не запускать ревью повторно при изменении меток.
+- **Анализ изменённого кода.** В модель передаются diff и описание MR, а не весь репозиторий.
+- **Поиск проблем.** Проверяются логика, безопасность, производительность, архитектура и стиль кода. Для найденных замечаний указываются файл, строка, серьёзность и рекомендация.
+- **Отчёт в GitLab.** Результат публикуется одним Markdown-комментарием с кратким итогом, замечаниями и вердиктом.
+- **Метки и подтверждение.** Сервис выставляет метки, возвращённые моделью, и пытается выполнить approve при вердикте `ready-for-merge`.
+- **Панель отчётов.** Список проверок и страницы с деталями доступны через браузер.
 
-### ✔ Мгновенный анализ Merge Request
-- Авто-запуск при `open`, `reopen`
-- Умная защита от GitLab label-update циклов
-- Анализируются только DIFF-изменения
+> Результат анализа носит рекомендательный характер. Автоматический approve зависит от прав GitLab-токена и правил конкретного проекта.
 
-### ✔ AI-проверка качества кода
-Ассистент определяет:
-- логические ошибки
-- архитектурные нарушения
-- performance-проблемы
-- security-риски
-- style/code-smell
-- корректность функционала
+## Как это работает
 
-### ✔ Профессиональные AI-комментарии внутри MR
-AI оставляет структурированный Markdown-отчёт:
-- Summary
-- Functional correctness
-- Findings
-- Recommendations
-- Verdict
-- Labels
-
-### ✔ Автоматическое выставление Labels
-Поддерживаются:
-- ready-for-merge
-- needs-fixes
-- security
-- urgent
-
-### ✔ Auto-Approve MR
-Если AI считает MR качественным — система делает approve.
-
-### ✔ Встроенный веб-интерфейс (Dashboard + Reports)
-Панель отображает:
-- список всех ревью
-- вердикт
-- метки
-- подробный отчёт
-
----
-
-## 📁 Структура проекта
-
-```
-ai-code-review-assistant/
-│── main.py
-│── gitlab_client.py
-│── llm_client.py
-│── review_store.py
-│── config.py
-│── templates/
-│     ├── dashboard.html
-│     └── report.html
-│── static/
-│     └── style.css
-│── requirements.txt
-└── .env
+```text
+GitLab Merge Request (open / reopen)
+                 |
+                 v
+         GitLab Webhook
+                 |
+                 v
+         Получение diff
+                 |
+                 v
+        OpenAI (gpt-4.1-mini)
+                 |
+                 v
+        Разбор JSON-ответа
+                 |
+          +------+------+ 
+          |             |
+          v             v
+   Комментарий,      Dashboard
+   метки, approve    и отчёты
 ```
 
----
+## Быстрый старт
 
-## ⚙️ Установка
+Потребуются Python 3.10+ (рекомендуется 3.11+), токен GitLab с доступом к проекту и ключ OpenAI API.
 
-### 1. Установить зависимости
-```
-pip install -r requirements.txt
+### 1. Склонируйте репозиторий
+
+```bash
+git clone https://github.com/Serafieli/ai-code-review-assistant.git
+cd ai-code-review-assistant
 ```
 
-### 2. Создать .env
+### 2. Установите зависимости
+
+```bash
+python -m venv .venv
 ```
-OPENAI_API_KEY=your_key
-GITLAB_TOKEN=your_token
+
+**Windows (PowerShell):**
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -m pip install jinja2
+```
+
+**Linux / macOS:**
+
+```bash
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m pip install jinja2
+```
+
+`jinja2` используется в `main.py` для HTML-шаблонов, но в текущем `requirements.txt` не указан, поэтому устанавливается отдельно.
+
+### 3. Настройте окружение
+
+Создайте файл `.env` в корне проекта:
+
+```dotenv
+OPENAI_API_KEY=your_openai_api_key
+GITLAB_TOKEN=your_gitlab_token
 GITLAB_BASE_URL=https://gitlab.com
-WEBHOOK_SECRET=your_secret
+WEBHOOK_SECRET=your_webhook_secret
 STORE_LIMIT=100
+DEBUG_MODE=false
 ```
 
-### 3. Запуск
-```
-uvicorn main:app --reload --port 8000
+| Переменная | Назначение |
+| --- | --- |
+| `OPENAI_API_KEY` | Ключ OpenAI API (обязательно) |
+| `GITLAB_TOKEN` | Токен для чтения MR и записи результатов через GitLab API (обязательно) |
+| `GITLAB_BASE_URL` | Адрес GitLab; по умолчанию `https://gitlab.com` |
+| `WEBHOOK_SECRET` | Секрет для проверки входящих webhook-запросов (обязательно) |
+| `STORE_LIMIT` | Максимальное число отчётов в памяти; по умолчанию `100` |
+| `DEBUG_MODE` | Флаг конфигурации; по умолчанию `false` |
+
+Для GitLab-токена потребуется доступ к API и достаточные права в проекте. Возможность approve определяется в том числе настройками GitLab.
+
+### 4. Запустите сервис
+
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
----
+После запуска:
 
-## 🔗 GitLab Webhook
-URL:
-```
-https://your-server/gitlab/webhook
-```
-Секрет:
-```
-WEBHOOK_SECRET
+| Адрес | Что открывает |
+| --- | --- |
+| `http://localhost:8000/` | Панель ревью |
+| `http://localhost:8000/review/1` | Отчёт с ID `1`, если он существует |
+| `http://localhost:8000/ping` | Проверка состояния сервиса |
+| `http://localhost:8000/docs` | Swagger UI FastAPI |
+
+Для локальной разработки можно добавить флаг `--reload`.
+
+## Подключение к GitLab
+
+Откройте нужный проект в GitLab: **Settings → Webhooks** (в некоторых версиях — **Settings → Integrations**).
+
+1. Укажите URL: `https://your-domain.example/gitlab/webhook`.
+2. В поле **Secret token** вставьте значение `WEBHOOK_SECRET` из `.env`.
+3. Включите событие **Merge request events**.
+4. Сохраните webhook и проверьте его доставку.
+
+GitLab должен иметь сетевой доступ к приложению. Для внешнего GitLab адрес `localhost` не подойдёт: нужен публичный HTTPS-адрес либо доступный из GitLab сервер.
+
+При `open` или `reopen` сервис получает diff, отправляет его в OpenAI, публикует комментарий, обновляет метки и сохраняет отчёт для панели. Если модель вернёт `ready-for-merge`, приложение также отправит запрос на approve.
+
+## Формат результата
+
+Ответ модели обрабатывается как JSON следующей структуры:
+
+```json
+{
+  "summary": "Краткое описание изменений",
+  "functional_correctness": "Оценка соответствия реализации задаче",
+  "findings": [
+    {
+      "type": "logic",
+      "severity": "medium",
+      "file": "app/service.py",
+      "line": 42,
+      "message": "Описание найденной проблемы",
+      "recommendation": "Рекомендация по исправлению"
+    }
+  ],
+  "verdict": "needs-fixes",
+  "labels": ["needs-fixes"]
+}
 ```
 
-Выбрать событие:
+Вердикты: `ready-for-merge`, `needs-fixes`. Дополнительные метки могут включать `security`, `refactor`, `urgent`. Для замечаний используются уровни `critical`, `high`, `medium`, `low`.
+
+## Структура проекта
+
+```text
+ai-code-review-assistant/
+├── main.py             # FastAPI, webhook, маршруты панели
+├── config.py           # Настройки из переменных окружения
+├── gitlab_client.py    # Запросы к GitLab API
+├── llm_client.py       # Анализ diff через OpenAI и обработка JSON
+├── review_store.py     # Хранение истории проверок в памяти
+├── templates/          # HTML-страницы панели и отчёта
+├── static/             # Стили веб-интерфейса
+├── requirements.txt    # Зависимости Python
+└── README.md
 ```
-✓ Merge Request Hook
-```
 
----
+## Важно знать
 
-## ❤️ Автор
-Разработчик: Братуха (serafiel)
-Проект создан для ForteBank AI Hackathon
+- **История временная.** Отчёты хранятся в оперативной памяти процесса и исчезают после перезапуска. `STORE_LIMIT` ограничивает число записей, но не сохраняет их на диск.
+- **Ревью не повторяется при push.** Сейчас webhook обрабатывает только действия `open` и `reopen`. Обновление уже открытого MR не запускает новую проверку.
+- **Анализируются только diff и описание MR.** Модель не получает автоматически весь контекст проекта и может пропустить проблемы за пределами изменений.
+- **Ревью выполняется во время обработки webhook.** Для крупных изменений или медленного ответа API стоит учитывать тайм-ауты доставки.
+- **Доступ к панели не ограничен авторизацией.** Маршрут `POST /clear` очищает историю и также не защищён. Не публикуйте текущую версию панели в открытый интернет без дополнительной защиты.
+- **Diff передаётся во внешний API.** Перед использованием с закрытыми репозиториями проверьте требования вашей организации к передаче исходного кода.
 
----
+## Разработка
 
-## 📄 Лицензия
-MIT License
+Основная логика обработки событий находится в `main.py`. Работа с GitLab вынесена в `gitlab_client.py`, запрос к модели и обработка ответа — в `llm_client.py`. Интерфейс построен на HTML-шаблонах из `templates/` и стилях из `static/`.
+
+Проект создавался для **ForteBank AI Hackathon**.
+
+**Автор:** [Serafieli](https://github.com/Serafieli)
+
+## Лицензия
+
+В текущем репозитории отдельный файл `LICENSE` не найден. До добавления файла с условиями лицензирования не следует считать проект автоматически распространяемым под MIT или другой открытой лицензией.
